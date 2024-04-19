@@ -1,11 +1,11 @@
-import Header from "./components/header";
-import Hello from "./components/hello";
+import Header from "./components/Header";
+import RecordingButton from "./components/RecordingButton";
 
 function App() {
   return (
     <div className="w-96">
       <Header />
-      <Hello />
+      <RecordingButton />
     </div>
   );
 }

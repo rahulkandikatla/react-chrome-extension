@@ -1,10 +1,10 @@
 {
-  "name": "react-vite-chrome-extension",
+  "name": "react-chrome-extension",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "author": {
-    "name": "mcnaveen"
+    "name": "Rahul"
   },
   "scripts": {
     "dev": "vite",
