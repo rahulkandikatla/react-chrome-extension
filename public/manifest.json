@@ -20,5 +20,8 @@
         "storage",
         "tabs"
     ],
-    "homepage_url": "https://timeless.co"
+    "host_permissions": [
+        "https://*/*",
+        "http://*/*"
+    ]
 }
