@@ -1,89 +1,76 @@
 import { useState, useRef } from "react";
 
 const mimeType = "audio/webm";
-
 const AudioRecorder = () => {
-  const [permission] = useState(false);
+  const [permission, setPermission] = useState(false);
   const mediaRecorder: any = useRef(null);
   const [recordingStatus, setRecordingStatus] = useState("inactive");
   const [stream]: any = useState(null);
   const [audioChunks, setAudioChunks] = useState([]);
   const [audio, setAudio]: any = useState(null);
 
-  // Listen for messages from content scripts
-  // function handleMessage(request: any) {
-  //   console.log(request, "inside, stream");
-  //   setPermission(true);
-  //   setStream(request);
-  // }
-  // chrome.runtime.onMessage.addListener(handleMessage);
-
   const getMicrophonePermission = () => {
-    chrome.runtime
-      .sendMessage({
-        type: "getPermission",
-      })
-      .then((message) => console.log(message, "success Message"))
-      .catch((error) => console.error(error, "err msg"));
-    // chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    //   chrome.scripting
-    //     .executeScript({
-    //       target: { tabId: tabs[0].id! },
-    //       func: getStream,
-    //     })
-    //     .then((response) => {
-    //       console.log(response, "response");
-    //       setPermission(true);
-    //       setStream(response[0].result);
-    //     });
+    console.log(stream, "initial stream");
+    chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
+      const response = await chrome.tabs.sendMessage(tabs[0].id!, {
+        greeting: "tip",
+      });
+      console.log(response, "response");
+      if (response === "permission granted") {
+        setPermission(true);
+      }
+    });
+
+    // chrome.tabs.query({active:true, currentWindow: true}, (tabs) => {
+    //     chrome.scripting.executeScript({
+    //         target: {tabId: tabs[0].id!},
+    //         func: async () => {
+    //             console.log("2")
+    //             try {
+    //                 console.log("3")
+    //             if ("MediaRecorder" in window) {
+    //                 const streamData: any = await navigator.mediaDevices.getUserMedia({
+    //                     audio: true,
+    //                     video: false,
+    //                 });
+    //                 console.log(streamData, "streamData at getpermission")
+    //                 setPermission(true);
+    //                 console.log("after setpermission")
+    //                 setStream(streamData);
+    //                 // return streamData
+    //             } else {
+    //                 alert("The MediaRecorder API is not supported in your browser.");
+    //             }} catch(err) {
+    //                 console.log(err, "err")
+    //             }
+    //         }
+    //     }).then((streamData: any) => {
+
+    //         console.log(streamData, "streamData")
+    //     }).catch((err=> console.log(err, "err at getMicrophonePermission")))
     // });
   };
 
-  // const getStream = async () => {
-  //   if ("MediaRecorder" in window) {
-  //     try {
-  //       const streamData = await navigator.mediaDevices.getUserMedia({
-  //         audio: true,
-  //         video: false,
-  //       });
-  //       console.log(streamData, "original streamData");
-  //       return { stream: streamData };
-  //       // setStream(streamData)
-  //       // Send stream data back to the background or popup script
-  //       // chrome.runtime.sendMessage(streamData);
-  //     } catch (err: any) {
-  //       console.error("Error obtaining stream:", err);
-  //       alert(err.message);
-  //     }
-  //   } else {
-  //     alert("The MediaRecorder API is not supported in your browser.");
-  //   }
-  // };
-
-  const startRecording = () => {
-    console.log(stream, "stream at start recording");
-
+  const startRecording = async () => {
     setRecordingStatus("recording");
-
-    const mediaRecorder: any = new MediaRecorder(stream);
-    mediaRecorder.current = mediaRecorder;
-    mediaRecorder.start();
-    const localAudioChunks: any = [];
-    mediaRecorder.ondataavailable = (event: any) => {
-      if (event.data.size > 0) {
-        localAudioChunks.push(event.data);
-      }
-    };
-    mediaRecorder.onstop = () => {
-      const audioBlob = new Blob(localAudioChunks, { type: "audio/webm" });
-      const audioUrl: any = URL.createObjectURL(audioBlob);
-      setAudio(audioUrl);
-      setAudioChunks([]);
+    console.log(stream, "stream");
+    //create new Media recorder instance using the stream
+    const media: any = new MediaRecorder(stream);
+    //set the MediaRecorder instance to the mediaRecorder ref
+    mediaRecorder.current = media;
+    //invokes the start method to start the recording process
+    mediaRecorder.current.start();
+    let localAudioChunks: any = [];
+    mediaRecorder.current.ondataavailable = (event: any) => {
+      if (typeof event.data === "undefined") return;
+      if (event.data.size === 0) return;
+      localAudioChunks.push(event.data);
     };
     setAudioChunks(localAudioChunks);
   };
 
   const stopRecording = () => {
+    console.log("asd");
     setRecordingStatus("inactive");
     //stops the recording instance
     mediaRecorder.current.stop();
@@ -104,31 +91,30 @@ const AudioRecorder = () => {
         <div className="mb-20">
           {!permission ? (
             <button onClick={getMicrophonePermission} type="button">
-              Get Microphone Permission
+              Get Microphone
             </button>
           ) : null}
-          {permission && recordingStatus === "inactive" && (
+          {permission && recordingStatus === "inactive" ? (
             <button onClick={startRecording} type="button">
               Start Recording
             </button>
-          )}
-          {recordingStatus === "recording" && (
+          ) : null}
+          {recordingStatus === "recording" ? (
             <button onClick={stopRecording} type="button">
               Stop Recording
             </button>
-          )}
+          ) : null}
         </div>
-        {audio && (
+        {audio ? (
           <div className="audio-container">
             <audio src={audio} controls></audio>
             <a download href={audio}>
               Download Recording
             </a>
           </div>
-        )}
+        ) : null}
       </main>
     </div>
   );
 };
-
 export default AudioRecorder;
