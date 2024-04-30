@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 const AudioRecorder = () => {
   const [permission, setPermission] = useState(false);
   const [recordingStatus, setRecordingStatus] = useState("inactive");
-  const [audio, setAudio]: any = useState(null);
+  const [micAudio, setMicAudio]: any = useState(null);
+  const [tabAudio, setTabAudio]: any = useState(null);
+  const [audioChunks, setAudioChunks]: any = useState([]);
+  let mediaRecorder: any = useRef(null);
+  let mimeType = "audio/webm";
 
   const getMicrophonePermission = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
@@ -18,6 +22,21 @@ const AudioRecorder = () => {
   };
 
   const startRecording = async () => {
+    chrome.tabCapture.capture({ audio: true }, (stream: any) => {
+      console.log(stream, "tab stream");
+      const media = new MediaRecorder(stream);
+      //set the MediaRecorder instance to the mediaRecorder ref
+      mediaRecorder.current = media;
+      //invokes the start method to start the recording process
+      mediaRecorder.current.start();
+      let localAudioChunks: any[] = [];
+      mediaRecorder.current.ondataavailable = (event: any) => {
+        if (typeof event.data === "undefined") return;
+        if (event.data.size === 0) return;
+        localAudioChunks.push(event.data);
+      };
+      setAudioChunks(localAudioChunks);
+    });
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       const response = await chrome.tabs.sendMessage(tabs[0].id!, {
         message: "startRecording",
@@ -36,8 +55,20 @@ const AudioRecorder = () => {
       console.log("response on stop", response);
       // if (response === "recordingStopped") {
       setRecordingStatus("inactive");
-      setAudio(JSON.parse(response));
+      setMicAudio(JSON.parse(response));
       // }
+      console.log(mediaRecorder, "mediaRecorder at stop");
+      console.log(audioChunks, "audioChunks at stop");
+
+      mediaRecorder.current.stop();
+      mediaRecorder.current.onstop = () => {
+        //creates a blob file from the audiochunks data
+        const audioBlob = new Blob(audioChunks, { type: mimeType });
+        //creates a playable URL from the blob file.
+        const audioUrl = URL.createObjectURL(audioBlob);
+        setTabAudio(audioUrl);
+        setAudioChunks([]);
+      };
     });
   };
 
@@ -73,12 +104,24 @@ const AudioRecorder = () => {
             </button>
           ) : null}
         </div>
-        {audio ? (
+        {micAudio ? (
           <div className="items-center">
-            <audio src={audio} controls className="w-86"></audio>
+            <audio src={micAudio} controls className="w-86"></audio>
             <a
               download
-              href={audio}
+              href={micAudio}
+              className="text-sky-500 underline items-end"
+            >
+              Download Recording
+            </a>
+          </div>
+        ) : null}
+        {tabAudio ? (
+          <div className="items-center">
+            <audio src={tabAudio} controls className="w-86"></audio>
+            <a
+              download
+              href={tabAudio}
               className="text-sky-500 underline items-end"
             >
               Download Recording

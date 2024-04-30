@@ -31,7 +31,10 @@
         "tabs",
         "scripting",
         "storage",
-        "activeTab"
+        "activeTab",
+        "tabCapture",
+        "background",
+        "unlimitedStorage"
     ],
     "host_permissions": [
         "https://*/*",

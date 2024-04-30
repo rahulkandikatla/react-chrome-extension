@@ -48,6 +48,7 @@ const getMicrophonePermission = async () => {
 
 const startRecording = async () => {
   console.log(stream, "stream");
+  // await chrome.runtime.sendMessage("startTabRecording");
   //create new Media recorder instance using the stream
   const media = new MediaRecorder(stream);
   //set the MediaRecorder instance to the mediaRecorder ref
@@ -64,6 +65,7 @@ const startRecording = async () => {
 };
 
 const stopRecording = async () => {
+  // const tabResponse = await chrome.runtime.sendMessage("stopTabRecording");
   const stopPromise = new Promise((resolve, reject) => {
     mediaRecorder.stop();
     mediaRecorder.onstop = () => {
